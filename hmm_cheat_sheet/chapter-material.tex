@@ -1,0 +1,256 @@
+\chapter{Hidden Markov Model Cheat Sheet} \label{sec:hmm-cheat}
+
+\chapterquote{The vampires of this world don't know the pleasures of
+  hunger.  They gorge themselves without savoring the kill.}{Sorin
+  Markov}
+
+%\chapterimageopt{serious.png}{width=5cm}{Courtesy XKCD}
+
+\begin{learningobjectives}
+\item Understand what a Hidden Markov Model is.
+\item Know the three important HMM problems and the algorithms for
+  solving them.
+\item The probability of a given sequence of observations.
+\item The most probable sequence of hidden states for a given sequence
+  of observations.
+\item Update the HMM parameters to increase the probability of given
+  sequences of observations.
+\end{learningobjectives}
+
+\dependencies{xxx.}
+
+This document is a ``cheat sheet'' on Hidden Markov Models (HMMs).  It
+resembles lecture notes, except that it cuts to the chase a little
+faster by defining terms and divulging the useful formulas as quickly
+as possible, in the place of gentle explanations and intuitions.
+
+\section{Notation}
+
+HMM:
+\begin{compactitem}
+\item states are not observable.
+\item observations are probabilistic function of state
+\item state transitions are probabilistic
+\end{compactitem}
+
+\begin{compactdesc}
+\item[$N$:] number of hidden states, numbered $1,\ldots,N$
+\item[$M$:] number of output symbols, numbered $1,\ldots,M$
+\item[$T$:] number of time steps in sequence of states and sequence of
+  output symbols
+\item[$\vv{q}$:] sequence of states traversed, $\vv{q} = (q_1,
+  \ldots, q_t, \ldots, q_T)$ where each $q_t \in \{1,\ldots,N\}$
+\item[$\vv{o}$:] observed output symbol sequence, $\vv{o} = (o_1,
+  \ldots, o_t, \ldots, o_T)$ where $o_t \in \{1,\ldots,M\}$
+\item[$\mathbf{A}$:] state transition matrix,
+  $a_{ij} = P(q_{t+1} = j \given q_t = i)$
+\item[$B$:] per-state observation distributions,
+  $b_i(k) = P(o_t = k \given q_t = i)$
+\item[$\vv{\pi}$:] initial state distribution, $\pi_i = P(q_1 = i)$
+\item[$\lam$:] all numeric parameters defining the HMM considered
+  together, $\lam = (\mathbf{A}, B, \vv{\pi})$
+\item[indices:] $i$, $j$ index states; $k$ indexes output symbols; $t$
+  indexes time
+\end{compactdesc}
+
+We proceed to review the solutions to the three big HMM problems:
+finding $P(\vv{o} \given \lam)$, finding $\vv{q}^* = \argmax_{\vv{q}}
+P(\vv{q} \given \vv{o}, \lam)$, and finding $\lam^* = \argmax_{\lam}
+P(\vv{o} \given \lam)$.
+
+\section{Probability of sequence of observations}
+
+We wish to calculate $P(\vv{o} \given \lam)$.
+
+Definition: $\alpha_t(i) = P(o_1, \ldots,o_t,q_t=i \given \lam)$.
+(In words: the probability of observing the head of length $t$ of the
+observations and being in state $i$ after that.)
+
+Initialization:
+$\alpha_1(i) = \pi_i \, b_i(o_1)$.
+
+Loop:
+$\alpha_{t+1}(j)
+= \biggl( \dsum_{i=1}^N \alpha_t(i) \, a_{ij} \biggr) \, b_j(o_{t+1})$
+
+At termination, $P(\vv{o} \given \lam) = \dsum_{i=1}^N \alpha_T(i)$.
+
+Note: complexity is $\OO(N^2 T)$ time, $\OO(N T)$ space.
+
+Note: calculating the $\alpha$ values is called the ``forward algorithm.''
+
+\section{Optimal state sequence from observations}
+
+Find $\vv{q}^* = \argmax_{\vv{q}} P(\vv{q} \given \vv{o}, \lam)$,
+the most likely sequence of hidden states given the observations.
+
+Note: calculating the most likely sequence of states is called a
+``Viterbi alignment.''
+
+Definition: $\beta_t(i)
+ = P(o_{t+1}, o_{t+2}, \ldots, o_T \given q_t = i, \lam)$.
+(In words: the probability that starting in state $i$ at time $t$, then
+generating the remaining tail of the observations.)
+
+Initialization: $\beta_T(i) = 1$.
+
+Loop: $\beta_t(i) = \dsum_{j=1}^N a_{ij} b_j(o_{t+1}) \beta_{t+1}(j)$.
+Calculated backwards: $t = T-1, T-2, \ldots, 1$.
+
+Note: calculating the $\beta$ values is called the ``backward algorithm.''
+
+Define:
+\begin{equation}
+  \delta_t(i)
+  = \max_{q_1, \ldots, q_{t-1}}
+  P(q_1, \ldots, q_{t-1}, q_t=i, o_1, \ldots, o_t \given \lam) .
+\end{equation}
+(In words: the probability of generating the head of length $t$ of
+ observables and having gone through the most likely states for
+ the first $t-1$ steps and ending up in state $i$.)
+
+Initialization: $\delta_1(i) = \pi_i \, b_i(o_1)$
+
+Loop: $\delta_t(j) = (\displaystyle \max_i \delta_{t-1}(i) \, a_{ij}) \, b_j(o_t)$
+
+Initialization: $\psi_1(i) = 0$
+
+Loop: $\psi_t(j) = \displaystyle \argmax_i \delta_{t-1}(i) \, a_{ij}$
+
+Termination: $P^* = \displaystyle \max_{i} \delta_T(i)$, the probability of
+generating the entire sequence of observables via the most probable
+sequence of states.
+
+Termination: $q^*_T = \displaystyle \argmax_i \delta_T(i)$, the most probable final
+state.
+
+Loop to find state sequence (``backtracking''):
+$q_t^* = \psi_{t+1}(q^*_{t+1})$
+
+Note: $\psi$ is written ``psi'' in English, and pronounced ``p'sai.''
+
+\subsection{Useful property of $\alpha$ and $\beta$}
+
+Note that
+\begin{equation*}
+  \begin{split}
+    \sum_i \alpha_t(i) \, \beta_t(i) &=
+    \sum_i P(o_1, \ldots,o_t,q_t=i \given \lam)
+    \,
+    P(o_{t+1}, o_{t+2}, \ldots, o_T \given q_t = i, \lam)
+    \\
+    &=
+    \sum_i P(o_1, \ldots,o_t,o_{t+1}, o_{t+2}, \ldots, o_T,q_t=i \given \lam)
+    \\
+    &=
+    \sum_i P(\vv{o}, q_t=i \given \lam)
+    \\
+    &= P(\vv{o} \given \lam)
+  \end{split}
+\end{equation*}
+This logic holds for any $t$, so the given sum should be the same for
+any $t$.  (The earlier formula for $P(\vv{o} \given \lam)$ was for
+the special case $t=T$ since $\beta_T(i)=1$.)  This formula thus
+provides a useful debugging test for HMM programs.
+
+\section{Estimate model parameters}
+
+Given $\vv{o}$ find $\lam^* = \argmax_{\lam} P(\vv{o} \given \lam)$.
+
+Not an analytic solution.  Instead, we start with a guess of
+$\lam$, typically random, then iterate $\lam$ to a local
+maximum, using an EM algorithm.  At each step we ``re-estimate'' a new
+$\lam$, called $\hat{\lam}$, which has an increased probability
+of generating $\vv{o}$.  (Or if already at a (possibly local)
+optimum, the same probability.)
+
+Note: this process is called ``Baum-Welch Re-Estimation.''
+
+Typical stopping rule for this re-estimation loop is:
+\begin{align*}
+  \text{stop when} \quad
+  \log P(\vv{o} \given \hat{\lam})
+  - \log P(\vv{o} \given \lam)
+  &< \epsilon
+  \quad \text{for some small $\epsilon$}
+\end{align*}
+
+Note: debugging hint, $P(\vv{o} \given \hat{\lambda}) \geq P(\vv{o}
+\given \lambda)$ should always be true.
+
+Definition: $\gamma_t(i) = P(q_t=i \given \vv{o}, \lam)$.  (In
+words: the probability of having been in state $i$ at time $t$.)
+\begin{equation*}
+  \gamma_t(i) =
+  \frac{\alpha_t(i) \, \beta_t(i)}{P(\vv{o} \given \lam)}
+\end{equation*}
+
+Definition: $\xi_t(i,j) = P(q_t=i, q_{t+1}=j \given \vv{o}, \lam)$.
+(In words: the probability of having transitioned from state $i$ to
+$j$ at time $t$.)
+\begin{equation*}
+  \xi_t(i,j) =
+  \frac
+  {\alpha_t(i) \, a_{ij} \, b_j(o_{t+1}) \, \beta_{t+1}(j)}
+  {P(\vv{o} \given \lam)}
+\end{equation*}
+
+Note: $\sum_i \gamma_t(i) = 1$ and $\sum_i \sum_j \xi_t(i,j) = 1$.
+
+Note: $\xi$ is written ``xi'' in English, and pronounced ``k'sai.''
+
+We write ``\#'' to abbreviate the phrase ``expected number of times''
+
+\# state $i$ visited: $\dsum_{t=1}^T \gamma_t(i)$
+
+\# transitions from state $i$ to state $j$ is:
+$\dsum_{t=1}^{T-1} \xi_t(i,j)$
+\begin{align*}
+  \hat{\pi}_i &= \frac{\gamma_1(i)}{\dsum_j \gamma_1(j)} = \gamma_1(i)
+  \\
+  \hat{a}_{ij} &= \frac{\text{\# transitions state $i$ to state
+  $j$}}{\text{\# transitions from state $i$}}
+  = \frac{\dsum_{t=1}^{T-1}  \xi_t(i,j)}{\dsum_{t=1}^{T-1} \gamma_t(i)}
+  \\[2ex]
+  \hat{b}_j(k)
+  &= \frac{\text{\# in state $j$ and output symbol $k$}}{\text{\# in state $j$}}
+  = \frac{\dsum_{t=1}^T [o_t=k] \, \gamma_t(j)}
+	 {\dsum_{t=1}^T \gamma_t(j)}
+\end{align*}
+where we use Knuth notation, $[\emph{boolean\_condition}] = \text{1 or
+0}$ depending on whether \emph{boolean\_condition} is true or false.
+
+\subsection{Training on multiple sequences}
+
+The above is for \emph{one} output observable sequence $\vv{o}$.  If
+there are multiple such observable output sequences, \emph{i.e.}\ a
+training set of them, then the basic variables defined above
+($\alpha$, $\beta$, etc) are computed for each of them.  Except for
+the re-estimation formulas, which need to sum over them as an
+``outer'' sum around the sums shown.
+
+We use a superscript $(p)$ to indicate values computed for observable
+sequence $\vv{o}^{(p)}$.  Note that $\lam$ and $N$ and $M$ are
+independent of $p$, but $T$ is not since each string in the training
+set might be a different length, $T^{(p)} = \dim \vv{o}^{(p)}$.
+
+The update formulas become:
+\begin{align*}
+  \hat{\pi}_i &= \frac{\dsum_p \gamma^{(p)}_1(i)}{\dsum_p 1}
+  \\
+  \hat{a}_{ij} &= \frac{\text{\# transitions state $i$ to state $j$}}
+		       {\text{\# transitions from state $i$}}
+  = \frac{\dsum_p \dsum_{t=1}^{T^{(p)}-1}  \xi^{(p)}_t(i,j)}
+	 {\dsum_p \dsum_{t=1}^{T^{(p)}-1} \gamma^{(p)}_t(i)}
+  \\[2ex]
+  \hat{b}_j(k)
+  &= \frac{\text{\# in state $j$ and output symbol $k$}}
+	  {\text{\# in state $j$}}
+  = \frac{\dsum_p \dsum_{t=1}^{T^{(p)}} [o^{(p)}_t=k] \, \gamma^{(p)}_t(j)}
+	 {\dsum_p \dsum_{t=1}^{T^{(p)}} \gamma^{(p)}_t(j)}
+\end{align*}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "example_chapter"
+%%% End:
