@@ -132,7 +132,7 @@ Note: $\psi$ is written ``psi'' in English, and pronounced ``p'sai.''
 \subsection{Useful property of $\alpha$ and $\beta$}
 
 Note that
-\begin{equation*}
+\begin{equation}
   \begin{split}
     \sum_i \alpha_t(i) \, \beta_t(i) &=
     \sum_i P(o_1, \ldots,o_t,q_t=i \given \lam)
@@ -147,7 +147,7 @@ Note that
     \\
     &= P(\vv{o} \given \lam)
   \end{split}
-\end{equation*}
+\end{equation}
 This logic holds for any $t$, so the given sum should be the same for
 any $t$.  (The earlier formula for $P(\vv{o} \given \lam)$ was for
 the special case $t=T$ since $\beta_T(i)=1$.)  This formula thus
@@ -167,33 +167,33 @@ optimum, the same probability.)
 Note: this process is called ``Baum-Welch Re-Estimation.''
 
 Typical stopping rule for this re-estimation loop is:
-\begin{align*}
+\begin{align}
   \text{stop when} \quad
   \log P(\vv{o} \given \hat{\lam})
   - \log P(\vv{o} \given \lam)
   &< \epsilon
   \quad \text{for some small $\epsilon$}
-\end{align*}
+\end{align}
 
 Note: debugging hint, $P(\vv{o} \given \hat{\lambda}) \geq P(\vv{o}
 \given \lambda)$ should always be true.
 
 Definition: $\gamma_t(i) = P(q_t=i \given \vv{o}, \lam)$.  (In
 words: the probability of having been in state $i$ at time $t$.)
-\begin{equation*}
+\begin{equation}
   \gamma_t(i) =
   \frac{\alpha_t(i) \, \beta_t(i)}{P(\vv{o} \given \lam)}
-\end{equation*}
+\end{equation}
 
 Definition: $\xi_t(i,j) = P(q_t=i, q_{t+1}=j \given \vv{o}, \lam)$.
 (In words: the probability of having transitioned from state $i$ to
 $j$ at time $t$.)
-\begin{equation*}
+\begin{equation}
   \xi_t(i,j) =
   \frac
   {\alpha_t(i) \, a_{ij} \, b_j(o_{t+1}) \, \beta_{t+1}(j)}
   {P(\vv{o} \given \lam)}
-\end{equation*}
+\end{equation}
 
 Note: $\sum_i \gamma_t(i) = 1$ and $\sum_i \sum_j \xi_t(i,j) = 1$.
 
@@ -205,7 +205,8 @@ We write ``\#'' to abbreviate the phrase ``expected number of times''
 
 \# transitions from state $i$ to state $j$ is:
 $\dsum_{t=1}^{T-1} \xi_t(i,j)$
-\begin{align*}
+\begin{subequations}
+\begin{align}
   \hat{\pi}_i &= \frac{\gamma_1(i)}{\dsum_j \gamma_1(j)} = \gamma_1(i)
   \\
   \hat{a}_{ij} &= \frac{\text{\# transitions state $i$ to state
@@ -216,7 +217,8 @@ $\dsum_{t=1}^{T-1} \xi_t(i,j)$
   &= \frac{\text{\# in state $j$ and output symbol $k$}}{\text{\# in state $j$}}
   = \frac{\dsum_{t=1}^T [o_t=k] \, \gamma_t(j)}
 	 {\dsum_{t=1}^T \gamma_t(j)}
-\end{align*}
+\end{align}
+\end{subequations}
 where we use Knuth notation, $[\emph{boolean\_condition}] = \text{1 or
 0}$ depending on whether \emph{boolean\_condition} is true or false.
 
@@ -235,7 +237,8 @@ independent of $p$, but $T$ is not since each string in the training
 set might be a different length, $T^{(p)} = \dim \vv{o}^{(p)}$.
 
 The update formulas become:
-\begin{align*}
+\begin{subequations}
+\begin{align}
   \hat{\pi}_i &= \frac{\dsum_p \gamma^{(p)}_1(i)}{\dsum_p 1}
   \\
   \hat{a}_{ij} &= \frac{\text{\# transitions state $i$ to state $j$}}
@@ -248,7 +251,8 @@ The update formulas become:
 	  {\text{\# in state $j$}}
   = \frac{\dsum_p \dsum_{t=1}^{T^{(p)}} [o^{(p)}_t=k] \, \gamma^{(p)}_t(j)}
 	 {\dsum_p \dsum_{t=1}^{T^{(p)}} \gamma^{(p)}_t(j)}
-\end{align*}
+\end{align}
+\end{subequations}
 
 %%% Local Variables:
 %%% mode: latex
